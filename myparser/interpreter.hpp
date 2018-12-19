@@ -175,7 +175,7 @@ public:
 class Call : public Expression {
 private:
     const string name;
-    const vector<Expression *> &args;
+    const vector<Expression *> args;
 
 public:
     Call(string name, const vector<Expression *> &args);
