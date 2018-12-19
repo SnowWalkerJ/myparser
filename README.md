@@ -17,8 +17,28 @@ This is a practice project trying to mimic Python using lex and yacc.
 
 ## Plans
 
-
+- [ ] Comments
 - [ ] Flow control (this can be a little tricky)
 - [ ] Multiple data types (currently only int is supported)
 
 Object-oriented programming is not in plan because I have no idea how to implement it.
+
+
+## Example script
+
+### Source
+
+```
+x = 3;
+
+function double(m) {
+    return m * 2;
+}
+
+y = double(x) + 10;
+print y;
+```
+
+### Output
+
+16

@@ -1,12 +1,8 @@
-a = 1 + 1;
-b = a * 2;
-print a;
-print b;
+x = 3;
 
-function test(m) {
-    n = m + 1;
-    return n;
+function double(m) {
+    return m * 2;
 }
 
-b = test(1);
-print b;
+y = double(x) + 10;
+print y;
