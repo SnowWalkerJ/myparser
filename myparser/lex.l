@@ -30,14 +30,16 @@ operation ([\+\-\*\/])
                         return WHILE;
                     } else if(strcmp(yytext, "print") == 0) {
                         return PRINT;
+                    } else if(strcmp(yytext, "function") == 0) {
+                        return FUNCTION;
+                    } else if(strcmp(yytext, "return") == 0) {
+                        return RETURN;
                     } else {
-                        yylval.type = "Name";
                         yylval.name = string(yytext);
                         return NAME;
                     }
                 }
 {integer}       {
-                    yylval.type = "Literal";
                     yylval.value = new MyObject(atoi(yytext));
                     return LITERAL;
                 }

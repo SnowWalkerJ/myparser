@@ -16,6 +16,8 @@ struct LexType {
     MyObject *value;
     Statement *stmt;
     vector<Statement *> stmts;
+    vector<string> argNames;
+    vector<Expression *> argValues;
 };
 
 

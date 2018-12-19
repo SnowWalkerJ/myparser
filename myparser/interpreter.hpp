@@ -15,6 +15,8 @@ typedef int MyObject;
 
 class Environment;
 
+class Call;
+
 
 class Expression {
 public:
@@ -47,10 +49,11 @@ public:
 class Environment {
 private:
     map<string, MyObject> variables;
-    const vector<Statement *> &codes;
+    const vector<Statement *> codes;
     int lineno;
     const int id;
-    MyObject *rtnValue;
+    map<unsigned long, MyObject> callCache;
+    unsigned long retSlot;
 public:
     Environment(const vector<Statement *> &codes, map<string, MyObject> variables, const int id);
     Nullable<MyObject> get(string name) const;
@@ -60,6 +63,17 @@ public:
     int getId() const;
     void nextLine();
     void print() const;
+    Statement *getCode(int i) const;
+    void setRetVar(string name);
+
+    bool hasCache(unsigned long) const;
+    MyObject getCache(unsigned long) const;
+    void setCache(unsigned long, MyObject);
+
+    void setRetSlot(unsigned long);
+    unsigned long getRetSlot() const;
+
+    void retn(unsigned long, const MyObject);
 };
 
 
@@ -126,7 +140,7 @@ public:
 class Interpreter {
 private:
     
-    vector<Environment> root;
+    vector<Environment *> root;
     map<string, pair<vector<string>, vector<Statement *> > > functions;
     Environment *env;
     vector<Statement *> codes;
@@ -142,15 +156,15 @@ public:
 
     MyObject getVariable(string name);
 
-    bool registerFunction(const string &name, const vector<string> &args, const vector<Statement *> &body);
+    bool registerFunction(const string &, const vector<string> &, const vector<Statement *> &);
 
-    bool callFunction(const string &name, const vector<Expression *> arguments);
+    bool callFunction(const string &, const vector<Expression *>, unsigned long);
 
     void print(const MyObject &obj);
 
     void pushd(const vector<Statement *> &codes, map<string, MyObject> variables);
 
-    void popd(void);
+    void popd(MyObject retVal);
 
     void execute(void);
 
@@ -160,11 +174,11 @@ public:
 
 class Call : public Expression {
 private:
-    const string &name;
+    const string name;
     const vector<Expression *> &args;
 
 public:
-    Call(const string &name, const vector<Expression *> &args);
+    Call(string name, const vector<Expression *> &args);
     MyObject evaluate(Environment const *env) const override;
     string toString() const override;
 };
@@ -181,9 +195,10 @@ public:
 
 class Assignment : public Statement {
 private:
-    const string name;
+    
     const Expression &expr;
 public:
+    const string name;
     Assignment(const string &name, const Expression &expr);
     void execute(Interpreter &interpreter) override;
     string toString() const override;
@@ -196,7 +211,7 @@ private:
     const vector<string> arguments;
     const vector<Statement *> statements;
 public:
-    Function(const string &name, const vector<string> &arguments, const vector<Statement *> &stmts);
+    Function(string name, vector<string> arguments, vector<Statement *> stmts);
     void execute(Interpreter &interpreter) override;
     string toString() const override;
 };
@@ -207,6 +222,15 @@ private:
     const Expression &expr;
 public:
     Print(const Expression &expr);
+    void execute(Interpreter &interpreter) override;
+    string toString() const override;
+};
+
+class Return : public Statement {
+private:
+    const Expression *expr;
+public:
+    Return(Expression *expr);
     void execute(Interpreter &interpreter) override;
     string toString() const override;
 };

@@ -26,74 +26,108 @@ extern int yylineno;
 %token RBRACK
 %token EQUALS
 %token END
+%token FUNCTION
+%token RETURN
 %token<type>OPERATION
 %token<name>NAME
 
 %%
 
 program: statements
-                        {
-                            cout << endl;
-                            Interpreter &interpreter = getInterpreter();
-                            for (vector<Statement *>::iterator iter = $1.stmts.begin(); iter != $1.stmts.end(); iter++) {
-                                interpreter.pushCode(*iter);
-                            }
-                            interpreter.run();
-                        }
+                                            {
+                                                cout << endl;
+                                                Interpreter &interpreter = getInterpreter();
+                                                for (vector<Statement *>::iterator iter = $1.stmts.begin(); iter != $1.stmts.end(); iter++) {
+                                                    interpreter.pushCode(*iter);
+                                                }
+                                                interpreter.run();
+                                            }
                     ;
 
-expression : LITERAL    {
-                            $$.type = "Expression";
-                            $$.expr = new Literal(*($1));
-                        }
-           | NAME       {
-                            $$.type = "Expression";
-                            $$.expr = new Variable(string($1));
-                        }
+expression : LITERAL                        {
+                                                $$.expr = new Literal(*($1));
+                                            }
+           | NAME                           {
+                                                $$.expr = new Variable($1);
+                                            }
            | LPAREN expression RPAREN
-                        {
-                            $$ = $2;
-                        }
+                                            {
+                                                $$ = $2;
+                                            }
            | expression OPERATION expression
-                        {
-                            $$.type = "Expression";
-                            if ($2 == "+") {
-                                $$.expr = new Plus(*($1.expr), *($3.expr));
-                            } else if ($2 == "-") {
-                                $$.expr = new Minus(*($1.expr), *($3.expr));
-                            } else if ($2 == "*") {
-                                $$.expr = new Times(*($1.expr), *($3.expr));
-                            } else if ($2 == "/") {
-                                $$.expr = new Divide(*($1.expr), *($3.expr));
-                            }
-                        }
+                                            {
+                                                if ($2 == "+") {
+                                                    $$.expr = new Plus(*($1.expr), *($3.expr));
+                                                } else if ($2 == "-") {
+                                                    $$.expr = new Minus(*($1.expr), *($3.expr));
+                                                } else if ($2 == "*") {
+                                                    $$.expr = new Times(*($1.expr), *($3.expr));
+                                                } else if ($2 == "/") {
+                                                    $$.expr = new Divide(*($1.expr), *($3.expr));
+                                                } else {
+                                                    cout << $2;
+                                                    exit(-1);
+                                                }
+                                            }
+           | NAME LPAREN arg_values RPAREN
+                                            {
+                                                $$.expr = new Call($1, $3.argValues);
+                                            }
            ;
 
+arg_names : NAME                            {
+                                                $$.argNames.push_back($1);
+                                            }
+          | arg_names COMMA NAME
+                                            {
+                                                $$ = $1;
+                                                $$.argNames.push_back($3);
+                                            }
+
+arg_values : expression                     {
+                                                $$.argValues.push_back($1.expr);
+                                            }
+           | arg_values COMMA expression    {
+                                                $$ = $1;
+                                                $$.argValues.push_back($3.expr);
+                                            }
 
 statement : NAME EQUALS expression SEMICOLON
-                        {
-                            $$.type = "Statement";
-                            $$.stmt = new Assignment($1, *($3.expr));
-                            $$.stmt->setLineno(yylineno);
-                        }
+                                            {
+                                                $$.stmt = new Assignment($1, *($3.expr));
+                                                $$.stmt->setLineno(yylineno);
+                                            }
           | PRINT expression SEMICOLON
-                        {
-                            $$.type = "Statement";
-                            $$.stmt = new Print(*($2.expr));
-                            $$.stmt->setLineno(yylineno);
-                        }
+                                            {
+                                                $$.stmt = new Print(*($2.expr));
+                                                $$.stmt->setLineno(yylineno);
+                                            }
+          | FUNCTION NAME LPAREN arg_names RPAREN LBRACK statements RBRACK
+                                            {
+                                                $$.stmt = new Function($2, $4.argNames, $7.stmts);
+                                                $$.stmt->setLineno(yylineno);
+                                            }
+          | IF LPAREN expression RPAREN LBRACK statements RBRACK
+                                            {
+                                                //TODO: if condition
+                                            }
+          | WHILE LPAREN expression RPAREN LBRACK statements RBRACK
+                                            {
+                                                //TODO: while condition
+                                            }
+          | RETURN expression SEMICOLON
+                                            {
+                                                $$.stmt = new Return($2.expr);
+                                                $$.stmt->setLineno(yylineno);
+                                            }
+          ;
 
-statements : statement
-                        {
-                            $$.type = "Statements";
-                            $$.stmts.push_back($1.stmt);
-                        }
-
+statements :                                ;
            | statements statement
-                        {
-                            $$ = $1;
-                            $$.stmts.push_back($2.stmt);
-                        }
+                                            {
+                                                $$ = $1;
+                                                $$.stmts.push_back($2.stmt);
+                                            }
             ;
 
 
@@ -109,20 +143,5 @@ void printHelp() {
 
 
 int main(int args, char **argv) {
-    // if (args != 2) {
-    //     printHelp();
-    //     return -1;
-    // }
-    
-
-    // interpreter.pushCode(new Assignment("a", Literal(10)));
-    // interpreter.pushCode(new Assignment("b", Plus(Variable("a"), Literal(5))));
-    // interpreter.pushCode(new Print(Variable("b")));
-    // yyin = fopen(argv[1], "r");
-    // if (!yyin) {
-    //     cout << "Can't open file: " << argv[1] << endl;
-    //     return -2;
-    // }
     yyparse();
-    // fclose(yyin);
 }

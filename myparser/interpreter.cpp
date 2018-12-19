@@ -23,10 +23,47 @@ T Nullable<T>::get() const {
 
 
 Environment::Environment(const vector<Statement *> &codes, map<string, MyObject> variables, const int id)
-  : lineno(0), codes(codes), rtnValue(NULL), id(id) {
-    this->variables.insert(variables.begin(), variables.end());
+  : lineno(0), codes(codes.begin(), codes.end()), id(id), retSlot(0), variables(variables.begin(), variables.end()) {
 }
 
+
+bool Environment::hasCache(unsigned long expr) const {
+    auto iter = callCache.find(expr);
+    return (iter != callCache.end());
+}
+
+
+MyObject Environment::getCache(unsigned long expr) const {
+    auto iter = callCache.find(expr);
+    return iter->second;
+}
+
+void Environment::setCache(unsigned long expr, MyObject obj) {
+    callCache[expr] = obj;
+}
+
+
+void Environment::setRetSlot(unsigned long caller) {
+    retSlot = caller;
+}
+
+
+unsigned long Environment::getRetSlot() const {
+    return retSlot;
+}
+
+
+Statement *Environment::getCode(int i) const {
+    if(!(i < codes.size())) {
+        cout << i << " " << codes.size() << endl;
+    }
+    return codes[i];
+}
+
+void Environment::retn(unsigned long caller, const MyObject value) {
+    setCache(caller, value);
+    lineno--;
+}
 
 void Environment::print() const {
     cout << "Output Environment" << endl;
@@ -136,12 +173,21 @@ string Variable::toString() const {
 }
 
 
-Call::Call(const string &name, const vector<Expression *> &args) : name(name), args(args) {}
+Call::Call(string name, const vector<Expression *> &args) : name(name), args(args) {}
 MyObject Call::evaluate(Environment const *env) const {
-    Interpreter &interpreter = getInterpreter();   // This is cheat!
-    interpreter.callFunction(name, args);
-    return MyObject();
+    if (env->hasCache((unsigned long)this)) {
+        MyObject retVal = env->getCache((unsigned long)this);
+        return retVal;
+    } else {
+        Interpreter &interpreter = getInterpreter();   // This is cheat!
+        if(!interpreter.callFunction(name, args, (unsigned long)this)) {
+            throw StringException("Cannot find function " + name);
+        }
+        return MyObject();
+    }
 }
+
+
 string Call::toString() const {
     stringstream ss;
     ss << name << "(";
@@ -154,9 +200,6 @@ string Call::toString() const {
 
 
 Interpreter::Interpreter() {
-    map<string, MyObject> emptyEnv;
-    env = new Environment(codes, emptyEnv, 0);
-    root.push_back(*env);
 }
 
 Environment *Interpreter::getEnv() {
@@ -191,13 +234,13 @@ bool Interpreter::registerFunction(const string &name, const vector<string> &arg
     }
 }
 
-bool Interpreter::callFunction(const string &name, const vector<Expression *> arguments) {
+bool Interpreter::callFunction(const string &name, const vector<Expression *> arguments, unsigned long caller) {
     auto iter = functions.find(name);
     if (iter == functions.end())
         return false;
     const auto fn = iter->second;
     const vector<string> &argNames = fn.first;
-    const vector<Statement *> &codes = fn.second;
+    vector<Statement *> codes = fn.second;
     map<string, MyObject> bindings;
     assert(argNames.size() == arguments.size());
     int N = arguments.size();
@@ -207,6 +250,7 @@ bool Interpreter::callFunction(const string &name, const vector<Expression *> ar
         bindings[name] = obj;
     }
     pushd(codes, bindings);
+    env->setRetSlot(caller);
     return true;
 }
 
@@ -215,32 +259,42 @@ void Interpreter::print(const MyObject &obj) {
 }
 
 void Interpreter::pushd(const vector<Statement *> &codes, map<string, MyObject> variables) {
+    root.push_back(env);
     env = new Environment(codes, variables, env->getId() + 1);
-    root.push_back(*env);
 }
 
-void Interpreter::popd(void) {
-    root.pop_back();
+void Interpreter::popd(MyObject retValue) {
+    unsigned long caller = env->getRetSlot();
     delete env;
-    env = &root.back();
+    env = root.back();
+    root.pop_back();
+    if (caller) {
+        env->retn(caller, retValue);
+    }
 }
 
 void Interpreter::execute(void) {
     int lineno = env->getLineno();
-    Statement *stmt = codes[lineno];
+    Statement *stmt = env->getCode(lineno);
+    env->nextLine();
     try {
-        cout << stmt->lineno << " " << stmt->toString() << endl;
+        // cout << stmt->lineno << " " << stmt->toString() << endl;
         stmt->execute(*this);
     } catch(StringException e) {
         cout << stmt->lineno << ": " << e.msg << endl;
         exit(-1);
     }
-    env->nextLine();
 }
 
 void Interpreter::run(void) {
+    // Init
+    map<string, MyObject> emptyEnv;
+    env = new Environment(codes, emptyEnv, 0);
+    root.push_back(env);
     int N = codes.size();
-    while (!(env->getId() == root[0].getId() && env->getLineno() >= N)) {
+
+    // Running
+    while (!(env == root.front() && env->getLineno() >= N)) {
         execute();
     }
 }
@@ -252,6 +306,8 @@ void Statement::setLineno(int lineno) {
 
 
 Assignment::Assignment(const string &name, const Expression &expr) : name(name), expr(expr) {}
+
+
 void Assignment::execute(Interpreter &interpreter) {
     MyObject val = expr.evaluate(interpreter.getEnv());
     interpreter.setVariable(name, val);
@@ -262,8 +318,9 @@ string Assignment::toString() const {
 }
 
 
-Function::Function(const string &name, const vector<string> &arguments, const vector<Statement *> &stmts)
-    : name(name), statements(stmts), arguments(arguments) {}
+Function::Function(string name, vector<string> arguments, vector<Statement *> stmts)
+    : name(name), statements(stmts.begin(), stmts.end()), arguments(arguments) {
+    }
 
 void Function::execute(Interpreter &interpreter) {
     interpreter.registerFunction(name, arguments, statements);
@@ -285,6 +342,22 @@ void Print::execute(Interpreter &interpreter) {
 string Print::toString() const {
     return "Print(" + expr.toString() + ")";
 }
+
+Return::Return(Expression *expr) : expr(expr) {
+
+}
+
+
+void Return::execute(Interpreter &interpreter) {
+    MyObject retValue = expr->evaluate(interpreter.getEnv());
+    interpreter.popd(retValue);
+}
+
+
+string Return::toString() const {
+    return "Return(" + expr->toString() + ")";
+}
+
 
 Interpreter interpreter;
 

@@ -2,3 +2,11 @@ a = 1 + 1;
 b = a * 2;
 print a;
 print b;
+
+function test(m) {
+    n = m + 1;
+    return n;
+}
+
+b = test(1);
+print b;
