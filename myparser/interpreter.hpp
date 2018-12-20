@@ -20,7 +20,7 @@ class Call;
 
 class Expression {
 public:
-    virtual int evaluate(Environment const *env) const = 0;
+    virtual bool evaluate(Environment const *env, MyObject *) const = 0;
     virtual string toString() const = 0;
 };
 
@@ -69,6 +69,7 @@ public:
     bool hasCache(unsigned long) const;
     MyObject getCache(unsigned long) const;
     void setCache(unsigned long, MyObject);
+    void clearCache();
 
     void setRetSlot(unsigned long);
     unsigned long getRetSlot() const;
@@ -82,7 +83,7 @@ private:
     const Expression &left, &right;
 public:
     Plus (const Expression &left, const Expression &right);
-    int evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -92,7 +93,7 @@ private:
     const Expression &left, &right;
 public:
     Minus (const Expression &left, const Expression &right);
-    int evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -102,7 +103,7 @@ private:
     const Expression &left, &right;
 public:
     Times (const Expression &left, const Expression &right);
-    int evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -112,7 +113,7 @@ private:
     const Expression &left, &right;
 public:
     Divide (const Expression &left, const Expression &right);
-    MyObject evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -122,7 +123,7 @@ private:
     const MyObject &value;
 public:
     Literal(const MyObject &value);
-    MyObject evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -132,7 +133,7 @@ private:
     const string name;
 public:
     Variable(const string &name);
-    MyObject evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -158,6 +159,8 @@ public:
 
     bool registerFunction(const string &, const vector<string> &, const vector<Statement *> &);
 
+    bool hasFunction(const string &);
+
     bool callFunction(const string &, const vector<Expression *>, unsigned long);
 
     void print(const MyObject &obj);
@@ -179,7 +182,7 @@ private:
 
 public:
     Call(string name, const vector<Expression *> &args);
-    MyObject evaluate(Environment const *env) const override;
+    bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
@@ -187,7 +190,7 @@ public:
 class Statement {
 public:
     int lineno;
-    virtual void execute(Interpreter &interpreter) = 0;
+    virtual bool execute(Interpreter &interpreter) = 0;
     virtual string toString() const = 0;
     void setLineno(int lineno);
 };
@@ -195,12 +198,11 @@ public:
 
 class Assignment : public Statement {
 private:
-    
-    const Expression &expr;
-public:
     const string name;
-    Assignment(const string &name, const Expression &expr);
-    void execute(Interpreter &interpreter) override;
+    const Expression *expr;
+public:
+    Assignment(const string &name, const Expression *expr);
+    bool execute(Interpreter &interpreter) override;
     string toString() const override;
 };
 
@@ -212,17 +214,17 @@ private:
     const vector<Statement *> statements;
 public:
     Function(string name, vector<string> arguments, vector<Statement *> stmts);
-    void execute(Interpreter &interpreter) override;
+    bool execute(Interpreter &interpreter) override;
     string toString() const override;
 };
 
 
 class Print : public Statement {
 private:
-    const Expression &expr;
+    const Expression *expr;
 public:
-    Print(const Expression &expr);
-    void execute(Interpreter &interpreter) override;
+    Print(const Expression *expr);
+    bool execute(Interpreter &interpreter) override;
     string toString() const override;
 };
 
@@ -231,7 +233,7 @@ private:
     const Expression *expr;
 public:
     Return(Expression *expr);
-    void execute(Interpreter &interpreter) override;
+    bool execute(Interpreter &interpreter) override;
     string toString() const override;
 };
 

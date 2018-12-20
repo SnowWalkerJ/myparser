@@ -4,5 +4,5 @@ function double(m) {
     return m * 2;
 }
 
-y = double(x) + 10;
+y = double(double(x)) + double(x) + 10;
 print y;

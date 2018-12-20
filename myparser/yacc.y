@@ -94,12 +94,12 @@ arg_values : expression                     {
 
 statement : NAME EQUALS expression SEMICOLON
                                             {
-                                                $$.stmt = new Assignment($1, *($3.expr));
+                                                $$.stmt = new Assignment($1, $3.expr);
                                                 $$.stmt->setLineno(yylineno);
                                             }
           | PRINT expression SEMICOLON
                                             {
-                                                $$.stmt = new Print(*($2.expr));
+                                                $$.stmt = new Print($2.expr);
                                                 $$.stmt->setLineno(yylineno);
                                             }
           | FUNCTION NAME LPAREN arg_names RPAREN LBRACK statements RBRACK

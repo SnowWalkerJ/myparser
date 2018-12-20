@@ -2,6 +2,14 @@
 #include <sstream>
 
 
+#ifdef DEBUG
+#define cdbg cout
+#else
+stringstream _nouse;
+#define cdbg _nouse
+#endif
+
+
 StringException::StringException(string msg) throw () : msg(msg) {}
 StringException::~StringException() throw () {}
 
@@ -42,6 +50,10 @@ void Environment::setCache(unsigned long expr, MyObject obj) {
     callCache[expr] = obj;
 }
 
+void Environment::clearCache() {
+    callCache.clear();
+}
+
 
 void Environment::setRetSlot(unsigned long caller) {
     retSlot = caller;
@@ -62,7 +74,6 @@ Statement *Environment::getCode(int i) const {
 
 void Environment::retn(unsigned long caller, const MyObject value) {
     setCache(caller, value);
-    lineno--;
 }
 
 void Environment::print() const {
@@ -101,10 +112,12 @@ void Environment::nextLine() {
 
 
 Plus::Plus (const Expression &left, const Expression &right) : left(left), right(right) {}
-MyObject Plus::evaluate(Environment const *env) const {
-    const MyObject &leftValue = left.evaluate(env);
-    const MyObject &rightValue = right.evaluate(env);
-    return leftValue + rightValue;
+bool Plus::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue + rightValue;
+    return true;
 }
 
 string Plus::toString() const {
@@ -113,10 +126,12 @@ string Plus::toString() const {
 
 
 Minus::Minus (const Expression &left, const Expression &right) : left(left), right(right) {}
-MyObject Minus::evaluate(Environment const *env) const {
-    const MyObject &leftValue = left.evaluate(env);
-    const MyObject &rightValue = right.evaluate(env);
-    return leftValue - rightValue;
+bool Minus::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue - rightValue;
+    return true;
 }
 
 string Minus::toString() const {
@@ -125,10 +140,12 @@ string Minus::toString() const {
 
 
 Times::Times (const Expression &left, const Expression &right) : left(left), right(right) {}
-MyObject Times::evaluate(Environment const *env) const {
-    const MyObject &leftValue = left.evaluate(env);
-    const MyObject &rightValue = right.evaluate(env);
-    return leftValue * rightValue;
+bool Times::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue * rightValue;
+    return true;
 }
 
 string Times::toString() const {
@@ -137,10 +154,12 @@ string Times::toString() const {
 
 
 Divide::Divide (const Expression &left, const Expression &right) : left(left), right(right) {}
-MyObject Divide::evaluate(Environment const *env) const {
-    const MyObject &leftValue = left.evaluate(env);
-    const MyObject &rightValue = right.evaluate(env);
-    return leftValue / rightValue;
+bool Divide::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue / rightValue;
+    return true;
 }
 
 string Divide::toString() const {
@@ -149,8 +168,9 @@ string Divide::toString() const {
 
 
 Literal::Literal(const MyObject &value) : value(value) {}
-MyObject Literal::evaluate(Environment const *env) const {
-    return value;
+bool Literal::evaluate(Environment const *env, MyObject *ret) const {
+    *ret = value;
+    return true;
 }
 
 string Literal::toString() const {
@@ -159,13 +179,14 @@ string Literal::toString() const {
 
 
 Variable::Variable(const string &name) : name(name) {}
-MyObject Variable::evaluate(Environment const *env) const {
-    Nullable<MyObject> const ret = env->get(name);
-    if (ret.isNull()) {
+bool Variable::evaluate(Environment const *env, MyObject *ret) const {
+    Nullable<MyObject> const retn = env->get(name);
+    if (retn.isNull()) {
         throw StringException("Variable not found: " + name);
     } else {
-        return ret.get();
+        *ret = retn.get();
     }
+    return true;
 }
 
 string Variable::toString() const {
@@ -174,16 +195,17 @@ string Variable::toString() const {
 
 
 Call::Call(string name, const vector<Expression *> &args) : name(name), args(args) {}
-MyObject Call::evaluate(Environment const *env) const {
+bool Call::evaluate(Environment const *env, MyObject *ret) const {
     if (env->hasCache((unsigned long)this)) {
-        MyObject retVal = env->getCache((unsigned long)this);
-        return retVal;
+        *ret = env->getCache((unsigned long)this);
+        return true;
     } else {
         Interpreter &interpreter = getInterpreter();   // This is cheat!
-        if(!interpreter.callFunction(name, args, (unsigned long)this)) {
+        if(!interpreter.hasFunction(name)) {
             throw StringException("Cannot find function " + name);
         }
-        return MyObject();
+        interpreter.callFunction(name, args, (unsigned long)this);
+        return false;
     }
 }
 
@@ -234,10 +256,12 @@ bool Interpreter::registerFunction(const string &name, const vector<string> &arg
     }
 }
 
+bool Interpreter::hasFunction(const string &name) {
+    return functions.find(name) != functions.end();
+}
+
 bool Interpreter::callFunction(const string &name, const vector<Expression *> arguments, unsigned long caller) {
     auto iter = functions.find(name);
-    if (iter == functions.end())
-        return false;
     const auto fn = iter->second;
     const vector<string> &argNames = fn.first;
     vector<Statement *> codes = fn.second;
@@ -246,7 +270,9 @@ bool Interpreter::callFunction(const string &name, const vector<Expression *> ar
     int N = arguments.size();
     for (int i = 0; i < N; i++){
         const string &name = argNames[i];
-        const MyObject obj = arguments[i]->evaluate(env);
+        MyObject obj;
+        if (!arguments[i]->evaluate(env, &obj))
+            return false;
         bindings[name] = obj;
     }
     pushd(codes, bindings);
@@ -268,18 +294,21 @@ void Interpreter::popd(MyObject retValue) {
     delete env;
     env = root.back();
     root.pop_back();
-    if (caller) {
-        env->retn(caller, retValue);
-    }
+    assert(caller);
+    env->retn(caller, retValue);
 }
 
 void Interpreter::execute(void) {
     int lineno = env->getLineno();
+    Environment *currentEnv = env;
     Statement *stmt = env->getCode(lineno);
-    env->nextLine();
     try {
-        // cout << stmt->lineno << " " << stmt->toString() << endl;
-        stmt->execute(*this);
+        cdbg << lineno << " " << stmt->lineno << " " << stmt->toString() << endl;
+        bool success = stmt->execute(*this);
+        if (success) {
+            currentEnv->clearCache();
+            currentEnv->nextLine();
+        }
     } catch(StringException e) {
         cout << stmt->lineno << ": " << e.msg << endl;
         exit(-1);
@@ -305,25 +334,29 @@ void Statement::setLineno(int lineno) {
 }
 
 
-Assignment::Assignment(const string &name, const Expression &expr) : name(name), expr(expr) {}
+Assignment::Assignment(const string &name, const Expression *expr) : name(name), expr(expr) {}
 
 
-void Assignment::execute(Interpreter &interpreter) {
-    MyObject val = expr.evaluate(interpreter.getEnv());
-    interpreter.setVariable(name, val);
+bool Assignment::execute(Interpreter &interpreter) {
+    MyObject val;
+    bool success = expr->evaluate(interpreter.getEnv(), &val);
+    if (success) {
+        interpreter.setVariable(name, val);
+    }
+    return success;
 }
 
 string Assignment::toString() const {
-    return name + " = " + expr.toString();
+    return name + " = " + expr->toString();
 }
 
 
 Function::Function(string name, vector<string> arguments, vector<Statement *> stmts)
-    : name(name), statements(stmts.begin(), stmts.end()), arguments(arguments) {
-    }
+    : name(name), statements(stmts.begin(), stmts.end()), arguments(arguments) {}
 
-void Function::execute(Interpreter &interpreter) {
+bool Function::execute(Interpreter &interpreter) {
     interpreter.registerFunction(name, arguments, statements);
+    return true;
 }
 
 string Function::toString() const {
@@ -331,16 +364,19 @@ string Function::toString() const {
 }
 
 
-Print::Print(const Expression &expr) : expr(expr) {}
+Print::Print(const Expression *expr) : expr(expr) {}
 
 
-void Print::execute(Interpreter &interpreter) {
-    MyObject obj = expr.evaluate(interpreter.getEnv());
-    interpreter.print(obj);
+bool Print::execute(Interpreter &interpreter) {
+    MyObject obj;
+    bool success = expr->evaluate(interpreter.getEnv(), &obj);
+    if (success)
+        interpreter.print(obj);
+    return success;
 }
 
 string Print::toString() const {
-    return "Print(" + expr.toString() + ")";
+    return "Print(" + expr->toString() + ")";
 }
 
 Return::Return(Expression *expr) : expr(expr) {
@@ -348,9 +384,14 @@ Return::Return(Expression *expr) : expr(expr) {
 }
 
 
-void Return::execute(Interpreter &interpreter) {
-    MyObject retValue = expr->evaluate(interpreter.getEnv());
-    interpreter.popd(retValue);
+bool Return::execute(Interpreter &interpreter) {
+    MyObject retValue;
+    bool success = expr->evaluate(interpreter.getEnv(), &retValue);
+    if (success)
+        interpreter.popd(retValue);
+    else
+        cout << expr->toString() << endl;
+    return success;
 }
 
 
