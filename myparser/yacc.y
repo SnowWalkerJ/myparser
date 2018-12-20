@@ -11,25 +11,24 @@ extern int yylineno;
 
 %}
 
+%nonassoc IFX
+%nonassoc ELSE
+
 %token<value>LITERAL
-%token LPAREN
-%token RPAREN
+%token<name>NAME
 %token COMMA
-%token INTEGER
 %token PERIOD
-%token IF
-%token ELSE
-%token WHILE
+%token IF ELSE WHILE
 %token PRINT
 %token SEMICOLON
-%token LBRACK
-%token RBRACK
+%token LBRACK RBRACK
+%token LPAREN RPAREN
 %token EQUALS
 %token END
-%token FUNCTION
-%token RETURN
-%token<type>OPERATION
-%token<name>NAME
+%token FUNCTION RETURN
+%token PLUS MINUS TIMES DIVIDE
+%token COMMENT_BEGIN COMMENT_END
+%token GT LT
 
 %%
 
@@ -54,20 +53,41 @@ expression : LITERAL                        {
                                             {
                                                 $$ = $2;
                                             }
-           | expression OPERATION expression
+           | expression PLUS expression
                                             {
-                                                if ($2 == "+") {
-                                                    $$.expr = new Plus(*($1.expr), *($3.expr));
-                                                } else if ($2 == "-") {
-                                                    $$.expr = new Minus(*($1.expr), *($3.expr));
-                                                } else if ($2 == "*") {
-                                                    $$.expr = new Times(*($1.expr), *($3.expr));
-                                                } else if ($2 == "/") {
-                                                    $$.expr = new Divide(*($1.expr), *($3.expr));
-                                                } else {
-                                                    cout << $2;
-                                                    exit(-1);
-                                                }
+                                                $$.expr = new Plus(*($1.expr), *($3.expr));
+                                            }
+           | expression MINUS expression
+                                            {
+                                                $$.expr = new Minus(*($1.expr), *($3.expr));
+                                            }
+           | expression TIMES expression
+                                            {
+                                                $$.expr = new Times(*($1.expr), *($3.expr));
+                                            }
+           | expression DIVIDE expression
+                                            {
+                                                $$.expr = new Divide(*($1.expr), *($3.expr));
+                                            }
+           | expression GT expression
+                                            {
+                                                $$.expr = new GreaterThan(*($1.expr), *($3.expr));
+                                            }
+           | expression LT expression
+                                            {
+                                                $$.expr = new LessThan(*($1.expr), *($3.expr));
+                                            }
+           | expression GT EQUALS expression
+                                            {
+                                                $$.expr = new GreaterEqual(*($1.expr), *($3.expr));
+                                            }
+           | expression LT EQUALS expression
+                                            {
+                                                $$.expr = new LessEqual(*($1.expr), *($3.expr));
+                                            }
+           | expression EQUALS EQUALS expression
+                                            {
+                                                $$.expr = new Equal(*($1.expr), *($4.expr));
                                             }
            | NAME LPAREN arg_values RPAREN
                                             {
@@ -107,14 +127,6 @@ statement : NAME EQUALS expression SEMICOLON
                                                 $$.stmt = new Function($2, $4.argNames, $7.stmts);
                                                 $$.stmt->setLineno(yylineno);
                                             }
-          | IF LPAREN expression RPAREN LBRACK statements RBRACK
-                                            {
-                                                //TODO: if condition
-                                            }
-          | WHILE LPAREN expression RPAREN LBRACK statements RBRACK
-                                            {
-                                                //TODO: while condition
-                                            }
           | RETURN expression SEMICOLON
                                             {
                                                 $$.stmt = new Return($2.expr);
@@ -123,10 +135,36 @@ statement : NAME EQUALS expression SEMICOLON
           ;
 
 statements :                                ;
+           | statements IF LPAREN expression RPAREN LBRACK statements RBRACK
+                                            {
+                                                $$ = $1;
+                                                Expression *condition = $4.expr;
+                                                vector<Statement *> &stmts = $7.stmts;
+                                                int skiprows = stmts.size();
+                                                If *if_stmt = new If(condition, skiprows);
+                                                $$.stmts.push_back(if_stmt);
+                                                $$.stmts.insert($$.stmts.end(), stmts.begin(), stmts.end());
+                                            }
+           | statements IF LPAREN expression RPAREN LBRACK statements RBRACK ELSE LBRACK statements RBRACK
+                                            {
+                                                $$ = $1;
+                                                Expression *condition = $4.expr;
+                                                vector<Statement *> &if_stmts = $7.stmts, else_stmts = $11.stmts;
+                                                int if_skiprows = if_stmts.size(), else_skiprows = else_stmts.size();
+                                                $$.stmts.push_back(new If(condition, if_skiprows + 1));
+                                                $$.stmts.insert($$.stmts.end(), if_stmts.begin(), if_stmts.end());
+                                                $$.stmts.push_back(new If(new Literal(1), else_skiprows));
+                                                $$.stmts.insert($$.stmts.end(), else_stmts.begin(), else_stmts.end());
+                                            }
            | statements statement
                                             {
                                                 $$ = $1;
                                                 $$.stmts.push_back($2.stmt);
+                                            }
+           
+           | WHILE LPAREN expression RPAREN LBRACK statements RBRACK
+                                            {
+                                                //TODO: while condition
                                             }
             ;
 

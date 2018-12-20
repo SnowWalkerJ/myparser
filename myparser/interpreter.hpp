@@ -78,41 +78,81 @@ public:
 };
 
 
-class Plus : public Expression {
-private:
+class BinaryOp : public Expression {
+protected:
     const Expression &left, &right;
 public:
-    Plus (const Expression &left, const Expression &right);
+    BinaryOp (const Expression &left, const Expression &right);
+};
+
+
+class Plus : public BinaryOp {
+public:
+    Plus(const Expression &left, const Expression &right);
     bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
 
-class Minus : public Expression {
-private:
-    const Expression &left, &right;
+class Minus : public BinaryOp {
 public:
-    Minus (const Expression &left, const Expression &right);
+    Minus(const Expression &left, const Expression &right);
     bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
 
-class Times : public Expression {
-private:
-    const Expression &left, &right;
+class Times : public BinaryOp {
 public:
-    Times (const Expression &left, const Expression &right);
+    Times(const Expression &left, const Expression &right);
     bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
 
 
-class Divide : public Expression {
-private:
-    const Expression &left, &right;
+class Divide : public BinaryOp {
 public:
-    Divide (const Expression &left, const Expression &right);
+    Divide(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
+class GreaterThan : public BinaryOp {
+public:
+    GreaterThan(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
+class LessThan : public BinaryOp {
+public:
+    LessThan(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
+class GreaterEqual : public BinaryOp {
+public:
+    GreaterEqual(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
+class LessEqual : public BinaryOp {
+public:
+    LessEqual(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
+class Equal : public BinaryOp {
+public:
+    Equal(const Expression &left, const Expression &right);
     bool evaluate(Environment const *, MyObject *) const override;
     string toString() const override;
 };
@@ -169,6 +209,8 @@ public:
 
     void popd(MyObject retVal);
 
+    void jmp(int);
+
     void execute(void);
 
     void run(void);
@@ -193,6 +235,17 @@ public:
     virtual bool execute(Interpreter &interpreter) = 0;
     virtual string toString() const = 0;
     void setLineno(int lineno);
+};
+
+
+class If : public Statement {
+private:
+    Expression *condition;
+    int skiprows;
+public:
+    If(Expression *, int);
+    bool execute(Interpreter &interpreter) override;
+    string toString() const override;
 };
 
 

@@ -43,48 +43,59 @@ operation ([\+\-\*\/])
                     yylval.value = new MyObject(atoi(yytext));
                     return LITERAL;
                 }
-{operation}     {
-                    yylval.type = yytext[0];
-                    return OPERATION;
+(\+)             {
+                    return PLUS;
+                }
+(-)             {
+                    return MINUS;
+                }
+(\*)             {
+                    return TIMES;
+                }
+(\/)             {
+                    return DIVIDE;
                 }
 (\()            {
-                    yylval.type = yytext[0];
                     return LPAREN;
                 }
 (\))            {
-                    yylval.type = yytext[0];
                     return RPAREN;
                 }
 (\{)            {
-                    yylval.type = yytext[0];
                     return LBRACK;
                 }
 (\})            {
-                    yylval.type = yytext[0];
                     return RBRACK;
                 }
 (\n+)           {
-                    yylval.type = yytext[0];
                     yylineno += strlen(yytext);
                 }
 (,)             {
-                    yylval.type = yytext[0];
                     return COMMA;
                 }
 (;)             {
-                    yylval.type = yytext[0];
                     return SEMICOLON;
                 }
 (=)             {
-                    yylval.type = yytext[0];
                     return EQUALS;
                 }
+(>)             {
+                    return GT;
+                }
+(<)             {
+                    return LT;
+                }
 (\.)            {
-                    yylval.type = yytext[0];
                     return PERIOD;
                 }
 (\n+)           {
                     yylineno += strlen(yytext);
+                }
+(\/\*)            {
+                    return COMMENT_BEGIN;
+                }
+(\*\/)            {
+                    return COMMENT_END;
                 }
 
 %%

@@ -10,7 +10,6 @@ using namespace std;
 
 
 struct LexType {
-    string type;
     string name;
     Expression *expr;
     MyObject *value;

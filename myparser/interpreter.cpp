@@ -111,7 +111,9 @@ void Environment::nextLine() {
 }
 
 
-Plus::Plus (const Expression &left, const Expression &right) : left(left), right(right) {}
+BinaryOp::BinaryOp (const Expression &left, const Expression &right) : left(left), right(right) {}
+
+Plus::Plus (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
 bool Plus::evaluate(Environment const *env, MyObject *ret) const {
     MyObject leftValue, rightValue;
     if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
@@ -125,7 +127,7 @@ string Plus::toString() const {
 }
 
 
-Minus::Minus (const Expression &left, const Expression &right) : left(left), right(right) {}
+Minus::Minus (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
 bool Minus::evaluate(Environment const *env, MyObject *ret) const {
     MyObject leftValue, rightValue;
     if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
@@ -139,7 +141,7 @@ string Minus::toString() const {
 }
 
 
-Times::Times (const Expression &left, const Expression &right) : left(left), right(right) {}
+Times::Times (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
 bool Times::evaluate(Environment const *env, MyObject *ret) const {
     MyObject leftValue, rightValue;
     if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
@@ -152,8 +154,7 @@ string Times::toString() const {
     return "Times(" + left.toString() + ", " + right.toString() + ")";
 }
 
-
-Divide::Divide (const Expression &left, const Expression &right) : left(left), right(right) {}
+Divide::Divide (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
 bool Divide::evaluate(Environment const *env, MyObject *ret) const {
     MyObject leftValue, rightValue;
     if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
@@ -164,6 +165,76 @@ bool Divide::evaluate(Environment const *env, MyObject *ret) const {
 
 string Divide::toString() const {
     return "Divide(" + left.toString() + ", " + right.toString() + ")";
+}
+
+
+GreaterThan::GreaterThan (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool GreaterThan::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue > rightValue;
+    return true;
+}
+
+string GreaterThan::toString() const {
+    return "GreaterThan(" + left.toString() + ", " + right.toString() + ")";
+}
+
+
+LessThan::LessThan (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool LessThan::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue < rightValue;
+    return true;
+}
+
+string LessThan::toString() const {
+    return "LessThan(" + left.toString() + ", " + right.toString() + ")";
+}
+
+
+GreaterEqual::GreaterEqual (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool GreaterEqual::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue >= rightValue;
+    return true;
+}
+
+string GreaterEqual::toString() const {
+    return "GreaterEqual(" + left.toString() + ", " + right.toString() + ")";
+}
+
+
+LessEqual::LessEqual (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool LessEqual::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue <= rightValue;
+    return true;
+}
+
+string LessEqual::toString() const {
+    return "LessEqual(" + left.toString() + ", " + right.toString() + ")";
+}
+
+
+Equal::Equal (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool Equal::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!(left.evaluate(env, &leftValue) && right.evaluate(env, &rightValue)))
+        return false;
+    *ret = leftValue == rightValue;
+    return true;
+}
+
+string Equal::toString() const {
+    return "Equal(" + left.toString() + ", " + right.toString() + ")";
 }
 
 
@@ -298,12 +369,20 @@ void Interpreter::popd(MyObject retValue) {
     env->retn(caller, retValue);
 }
 
+
+void Interpreter::jmp(int lines) {
+    for (int i = 0; i < lines; i++) {
+        env->nextLine();
+    }
+}
+
+
 void Interpreter::execute(void) {
     int lineno = env->getLineno();
     Environment *currentEnv = env;
     Statement *stmt = env->getCode(lineno);
     try {
-        cdbg << lineno << " " << stmt->lineno << " " << stmt->toString() << endl;
+        cdbg << stmt->lineno << " " << stmt->toString() << endl;
         bool success = stmt->execute(*this);
         if (success) {
             currentEnv->clearCache();
@@ -379,8 +458,24 @@ string Print::toString() const {
     return "Print(" + expr->toString() + ")";
 }
 
-Return::Return(Expression *expr) : expr(expr) {
 
+If::If(Expression *condition, int skiprows) : condition(condition), skiprows(skiprows) {}
+
+
+bool If::execute(Interpreter &interpreter) {
+    MyObject obj;
+    bool success = condition->evaluate(interpreter.getEnv(), &obj);
+    if (!success)
+        return success;
+    if (!obj)
+        interpreter.jmp(skiprows);   // The interpreter adds by one itself
+    return true;
+}
+
+string If::toString() const {
+    stringstream ss;
+    ss << "if (" << condition->toString() << ") skip " << skiprows << " lines" << endl;
+    return ss.str();
 }
 
 
@@ -392,6 +487,11 @@ bool Return::execute(Interpreter &interpreter) {
     else
         cout << expr->toString() << endl;
     return success;
+}
+
+
+Return::Return(Expression *expr) : expr(expr) {
+
 }
 
 
