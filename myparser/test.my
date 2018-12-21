@@ -1,8 +1,20 @@
 x = 3;
 
-function double(m) {
-    return m * 2;
+
+function power(base, p) {
+    if (p == 1) {
+        return base;
+    } else {
+        return base * power(base, p - 1);
+    }
 }
 
-y = double(double(x)) + double(x) + 10;
+function double(x) {
+    return x * 2;
+}
+
+print double(x);
+
+y = power(3, 3);
+
 print y;

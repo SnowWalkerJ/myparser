@@ -20,6 +20,8 @@ $(TARGET_DIR)/y.tab.o
 
 .Phony: all run clean
 
+all: run
+
 $(LEX_TARGET): $(LEX_SOURCE) $(SOURCE_DIR)/common.hpp $(SOURCE_DIR)/y.tab.h
 	$(LEX) -o $@ $<
 
@@ -41,8 +43,6 @@ $(TARGET_DIR)/y.tab.o: $(SOURCE_DIR)/y.tab.c $(SOURCE_DIR)/common.hpp
 $(EXE): $(O_FILES)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-
-all: run
 
 run: $(EXE)
 

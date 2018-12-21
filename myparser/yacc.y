@@ -125,6 +125,7 @@ statement : NAME EQUALS expression SEMICOLON
           | FUNCTION NAME LPAREN arg_names RPAREN LBRACK statements RBRACK
                                             {
                                                 $$.stmt = new Function($2, $4.argNames, $7.stmts);
+                                                $7.stmts.clear();             // Because this variable will be reused
                                                 $$.stmt->setLineno(yylineno);
                                             }
           | RETURN expression SEMICOLON

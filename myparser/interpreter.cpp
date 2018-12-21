@@ -321,6 +321,7 @@ bool Interpreter::registerFunction(const string &name, const vector<string> &arg
     auto iter = functions.find(name);
     if (iter == functions.end()) {
         functions[name] = pair<vector<string>, vector<Statement *>>(args, body);
+        
         return true;
     } else {
         return false;
@@ -430,8 +431,9 @@ string Assignment::toString() const {
 }
 
 
-Function::Function(string name, vector<string> arguments, vector<Statement *> stmts)
-    : name(name), statements(stmts.begin(), stmts.end()), arguments(arguments) {}
+Function::Function(const string &name, const vector<string> &arguments, const vector<Statement *> &stmts)
+    : name(name), statements(stmts.begin(), stmts.end()), arguments(arguments.begin(), arguments.end()) {
+}
 
 bool Function::execute(Interpreter &interpreter) {
     interpreter.registerFunction(name, arguments, statements);
@@ -484,9 +486,7 @@ bool Return::execute(Interpreter &interpreter) {
     bool success = expr->evaluate(interpreter.getEnv(), &retValue);
     if (success)
         interpreter.popd(retValue);
-    else
-        cout << expr->toString() << endl;
-    return success;
+    return false;
 }
 
 

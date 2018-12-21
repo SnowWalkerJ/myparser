@@ -197,7 +197,7 @@ public:
 
     MyObject getVariable(string name);
 
-    bool registerFunction(const string &, const vector<string> &, const vector<Statement *> &);
+    bool registerFunction(const string&, const vector<string> &, const vector<Statement *> &);
 
     bool hasFunction(const string &);
 
@@ -266,7 +266,7 @@ private:
     const vector<string> arguments;
     const vector<Statement *> statements;
 public:
-    Function(string name, vector<string> arguments, vector<Statement *> stmts);
+    Function(const string &name, const vector<string> &arguments, const vector<Statement *> &stmts);
     bool execute(Interpreter &interpreter) override;
     string toString() const override;
 };
