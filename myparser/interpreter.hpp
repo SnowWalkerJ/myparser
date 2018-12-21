@@ -158,6 +158,22 @@ public:
 };
 
 
+class LogicalAnd : public BinaryOp {
+public:
+    LogicalAnd(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
+class LogicalOr : public BinaryOp {
+public:
+    LogicalOr(const Expression &left, const Expression &right);
+    bool evaluate(Environment const *, MyObject *) const override;
+    string toString() const override;
+};
+
+
 class Literal : public Expression {
 private:
     const MyObject &value;

@@ -43,7 +43,7 @@ operation ([\+\-\*\/])
                     yylval.value = new MyObject(atoi(yytext));
                     return LITERAL;
                 }
-(\+)             {
+(\+)            {
                     return PLUS;
                 }
 (-)             {
@@ -91,11 +91,17 @@ operation ([\+\-\*\/])
 (\n+)           {
                     yylineno += strlen(yytext);
                 }
-(\/\*)            {
+(\/\*)          {
                     return COMMENT_BEGIN;
                 }
-(\*\/)            {
+(\*\/)          {
                     return COMMENT_END;
+                }
+(\&)            {
+                    return AND;
+                }
+(\|)            {
+                    return OR;
                 }
 
 %%

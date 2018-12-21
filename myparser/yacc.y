@@ -29,6 +29,12 @@ extern int yylineno;
 %token PLUS MINUS TIMES DIVIDE
 %token COMMENT_BEGIN COMMENT_END
 %token GT LT
+%token AND OR
+
+%left AND OR
+%left GT LT
+%left PLUS MINUS
+%left TIMES DIVIDE
 
 %%
 
@@ -88,6 +94,14 @@ expression : LITERAL                        {
            | expression EQUALS EQUALS expression
                                             {
                                                 $$.expr = new Equal(*($1.expr), *($4.expr));
+                                            }
+           | expression AND AND expression
+                                            {
+                                                $$.expr = new LogicalAnd(*($1.expr), *($4.expr));
+                                            }
+           | expression OR OR expression
+                                            {
+                                                $$.expr = new LogicalOr(*($1.expr), *($4.expr));
                                             }
            | NAME LPAREN arg_values RPAREN
                                             {

@@ -238,6 +238,50 @@ string Equal::toString() const {
 }
 
 
+LogicalOr::LogicalOr (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool LogicalOr::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!left.evaluate(env, &leftValue))
+        return false;
+    if (leftValue) {
+        *ret = true;
+        return true;
+    }
+
+    if(!right.evaluate(env, &rightValue))
+        return false;
+    
+    *ret = rightValue;
+    return true;
+}
+
+string LogicalOr::toString() const {
+    return "(" + left.toString() + ") || (" + right.toString() + ")";
+}
+
+
+LogicalAnd::LogicalAnd (const Expression &left, const Expression &right) : BinaryOp(left, right) {}
+bool LogicalAnd::evaluate(Environment const *env, MyObject *ret) const {
+    MyObject leftValue, rightValue;
+    if(!left.evaluate(env, &leftValue))
+        return false;
+    if (!leftValue) {
+        *ret = false;
+        return true;
+    }
+
+    if(!right.evaluate(env, &rightValue))
+        return false;
+    
+    *ret = rightValue;
+    return true;
+}
+
+string LogicalAnd::toString() const {
+    return "(" + left.toString() + ") && (" + right.toString() + ")";
+}
+
+
 Literal::Literal(const MyObject &value) : value(value) {}
 bool Literal::evaluate(Environment const *env, MyObject *ret) const {
     *ret = value;
