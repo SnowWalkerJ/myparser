@@ -1,5 +1,4 @@
 build/
 myparser/lex.yy.cc
-myparser/y.tab.c
-myparser/y.tab.h
+myparser/y.tab.*
 .vscode

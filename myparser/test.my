@@ -1,6 +1,5 @@
 x = 3;
 
-
 function power(base, p) {
     if (p == 1) {
         return base;
@@ -9,12 +8,15 @@ function power(base, p) {
     }
 }
 
-function double(x) {
-    return x * 2;
+function power2(base, p) {
+    result = 1;
+    while (p > 0) {
+        result = result * base;
+        p = p - 1;
+    }
+    print result;
+    return 1;
 }
 
-print double(x);
-
-y = power(3, 3);
-
-print y;
+print power(3, 3);
+print power2(3, 3);

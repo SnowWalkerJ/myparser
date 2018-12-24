@@ -1,6 +1,6 @@
 %{
 #include "common.hpp"
-#include "y.tab.h"
+#include "y.tab.hh"
 
 extern "C" {
     int yywrap(void);

@@ -1,11 +1,11 @@
 TARGET_DIR=build
 SOURCE_DIR=myparser
 CXX=g++
-LEX=lex
-YACC=yacc
+LEX=flex
+YACC=bison
 
-DEBUG=
-CXXFLAGS=-std=c++11 $(DEBUG)
+DEBUG=-DDEBUG
+CXXFLAGS=-std=c++11 $(DEBUG) -g
 HEADERS=$(SOURCE_DIR)/interpreter.hpp $(SOURCE_DIR)/common.hpp $(SOURCE_DIR)/y.tab.h
 LEX_SOURCE=$(SOURCE_DIR)/lex.l
 YACC_SOURCE=$(SOURCE_DIR)/yacc.y
@@ -29,7 +29,7 @@ $(YACC_TARGET): $(YACC_SOURCE) $(SOURCE_DIR)/common.hpp
 	$(YACC) -d -o $@ $<
 
 $(SOURCE_DIR)/y.tab.h: $(YACC_SOURCE) $(SOURCE_DIR)/common.hpp
-	$(YACC) -d -o $@ $<
+	$(YACC) -d -o $(SOURCE_DIR)/y.tab.cc $<
 
 $(TARGET_DIR)/interpreter.o: $(SOURCE_DIR)/interpreter.cpp $(SOURCE_DIR)/interpreter.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -45,7 +45,7 @@ $(EXE): $(O_FILES)
 
 
 run: $(EXE)
-
+	$(EXE)
 
 clean:
 	rm build/*
