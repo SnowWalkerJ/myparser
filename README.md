@@ -19,7 +19,7 @@ This is a practice project trying to mimic Python using lex and yacc.
 	- e.g. `if (x > 0) {return 1;} else {return 0;}`
 - [x] Comments
 	- e.g. `// This is single-line comment`
-	- e.g. `/* This is multi-line comment/*`
+	- e.g. `/* This is multi-line comment*/`
 
 ## Plans
 
