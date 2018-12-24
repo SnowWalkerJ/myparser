@@ -17,10 +17,13 @@ This is a practice project trying to mimic Python using lex and yacc.
 - [x] Flow control
 	- e.g. `while (x > 0) {print x; x = x - 1;}`
 	- e.g. `if (x > 0) {return 1;} else {return 0;}`
+- [x] Comments
+	- e.g. `// This is single-line comment`
+	- e.g. `/* This is multi-line comment/*`
 
 ## Plans
 
-- [ ] Comments
+
 - [ ] Multiple data types (currently only int is supported)
 
 Object-oriented programming is not in plan because I have no idea how to implement it.

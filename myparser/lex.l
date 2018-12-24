@@ -103,7 +103,12 @@ operation ([\+\-\*\/])
 (\|)            {
                     return OR;
                 }
-
+(\/\/.*)        {
+                    // Singleline comment
+                }
+(\/\*([a]|[^a])*\*\/)      {
+                    // Multiline comment
+                }
 %%
 
 
