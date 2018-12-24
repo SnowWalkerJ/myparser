@@ -14,11 +14,13 @@ This is a practice project trying to mimic Python using lex and yacc.
 	- e.g. `function double(x) {return x * 2;}`
 - [x] Function call
 	- e.g. `y = double(x);`
+- [x] Flow control
+	- e.g. `while (x > 0) {print x; x = x - 1;}`
+	- e.g. `if (x > 0) {return 1;} else {return 0;}`
 
 ## Plans
 
 - [ ] Comments
-- [ ] Flow control (this can be a little tricky)
 - [ ] Multiple data types (currently only int is supported)
 
 Object-oriented programming is not in plan because I have no idea how to implement it.

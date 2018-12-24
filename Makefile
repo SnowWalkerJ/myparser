@@ -4,8 +4,8 @@ CXX=g++
 LEX=flex
 YACC=bison
 
-DEBUG=-DDEBUG
-CXXFLAGS=-std=c++11 $(DEBUG) -g
+DEBUG=
+CXXFLAGS=-std=c++11 $(DEBUG)
 HEADERS=$(SOURCE_DIR)/interpreter.hpp $(SOURCE_DIR)/common.hpp $(SOURCE_DIR)/y.tab.h
 LEX_SOURCE=$(SOURCE_DIR)/lex.l
 YACC_SOURCE=$(SOURCE_DIR)/yacc.y

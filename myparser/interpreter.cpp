@@ -454,11 +454,11 @@ void Interpreter::run(void) {
     // Init
     map<string, MyObject> emptyEnv;
     env = new Environment(codes, emptyEnv, 0);
-    root.push_back(env);
+    Environment *rootEnv = env;
     int N = codes.size();
 
     // Running
-    while (!(env == root.front() && env->getLineno() >= N)) {
+    while (!(env == rootEnv && env->getLineno() >= N)) {
         execute();
     }
 }

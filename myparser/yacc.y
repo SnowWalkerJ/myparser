@@ -163,8 +163,11 @@ statements :                                ;
                                                 vector<Statement *> &stmts = $7;
                                                 int skiprows = stmts.size();
                                                 If *if_stmt = new If(condition, skiprows);
+                                                if_stmt->setLineno(yylineno - skiprows);
                                                 $$.push_back(if_stmt);
                                                 $$.insert($$.end(), stmts.begin(), stmts.end());
+
+                                                stmts.clear();
                                             }
            | statements IF LPAREN expression RPAREN LBRACK statements RBRACK ELSE LBRACK statements RBRACK
                                             {
@@ -183,14 +186,17 @@ statements :                                ;
                                                 $$.push_back(else_stmt);
 
                                                 $$.insert($$.end(), else_stmts.begin(), else_stmts.end());
+
+                                                if_stmts.clear();
+                                                else_stmts.clear();
                                             }
            | statements WHILE LPAREN expression RPAREN LBRACK statements RBRACK
                                             {
                                                 $$ = $1;
                                                 Expression *condition = $4;
-                                                vector<Statement *> &stmts = $7;
+                                                vector<Statement *> stmts = $7;
                                                 int skiprows = stmts.size() + 1;
-                                                If *if_stmt = new If(condition, stmts.size());
+                                                If *if_stmt = new If(condition, skiprows);
                                                 if_stmt->setLineno(yylineno - stmts.size());
                                                 $$.push_back(if_stmt);
 
@@ -199,16 +205,13 @@ statements :                                ;
                                                 Statement *loop = new If(new Literal(0), -skiprows - 1);
                                                 loop->setLineno(yylineno);
                                                 $$.push_back(loop);
+
+                                                stmts.clear();
                                             }
            | statements statement
                                             {
                                                 $$ = $1;
                                                 $$.push_back($2);
-                                            }
-           
-           | WHILE LPAREN expression RPAREN LBRACK statements RBRACK
-                                            {
-                                                //TODO: while condition
                                             }
             ;
 
