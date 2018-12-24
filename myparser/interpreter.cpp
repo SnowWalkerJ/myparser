@@ -9,6 +9,14 @@ stringstream _nouse;
 #define cdbg _nouse
 #endif
 
+#ifndef assert
+#ifdef DEBUG
+#define assert(cond) if(!(cond)) cdbg << "Assertion failed" << endl
+#else
+#define assert(cond)
+#endif /* DEBUG */
+#endif /* assert */
+
 
 StringException::StringException(string msg) throw () : msg(msg) {}
 StringException::~StringException() throw () {}
@@ -66,9 +74,6 @@ unsigned long Environment::getRetSlot() const {
 
 
 Statement *Environment::getCode(int i) const {
-    if(!(i < codes.size())) {
-        cout << i << " " << codes.size() << endl;
-    }
     return codes[i];
 }
 
@@ -106,8 +111,16 @@ int Environment::getId() const {
     return id;
 }
 
+
+void Environment::jmp(int lines) {
+    int lineno_before = lineno;
+    lineno += lines;
+    int lineno_after = lineno;
+}
+
+
 void Environment::nextLine() {
-    lineno++;
+    jmp(1);
 }
 
 
@@ -416,9 +429,7 @@ void Interpreter::popd(MyObject retValue) {
 
 
 void Interpreter::jmp(int lines) {
-    for (int i = 0; i < lines; i++) {
-        env->nextLine();
-    }
+    env->jmp(lines);
 }
 
 

@@ -61,6 +61,7 @@ public:
     void set(string name, int value);
     int getLineno() const;
     int getId() const;
+    void jmp(int);
     void nextLine();
     void print() const;
     Statement *getCode(int i) const;
